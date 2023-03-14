@@ -75,4 +75,4 @@ class  MyVideoCapture:
         if self.vid.isOpened():
             self.vid.release()
 
-App(tkinter.Tk(),"tkinter ad OpenCV")
+App(tkinter.Tk(),"tkinter and OpenCV")
