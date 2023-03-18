@@ -2,6 +2,7 @@ import tkinter
 import cv2
 import PIL.Image, PIL.ImageTk
 import time
+import pyfirmata
 
 
 class App:
@@ -34,15 +35,18 @@ class App:
 
         self.window.mainloop()
 
-    def digit_flip(self, source):
-        if source == 1:
-            source = 2
+    def move_forward(self):
+        pyfirmata.ArduinoMega()
 
-        if source == 2:
-            source = 1
+    def digit_flip(self):
+        if self.video_source == 1:
+            self.video_source = 2
+
+        elif self.video_source == 2:
+            self.video_source = 1
         
     def switch_camera(self):
-        self.video_source = self.digit_flip(self.video_source)
+        self.digit_flip()
         self.vid= MyVideoCapture(self.video_source)
 
     def snapshot(self):

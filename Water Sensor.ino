@@ -1,4 +1,4 @@
-#define WATER_PIN  7 // D7 pin setup
+#define WATER_PIN  2 // D7 pin setup
 #define SIGNAL_PIN A5 // Water sensor pin
 #define LED 13  // Water sensor LED pin
 
@@ -10,14 +10,13 @@ void setup() {
   digitalWrite(WATER_PIN, LOW); // turn the sensor OFF
 }
 
-void loop() {
-  digitalWrite(WATER_PIN, HIGH);  // turn water sensor ON
+void loop() {  // turn water sensor ON
   value = analogRead(SIGNAL_PIN); // read the analog value from water sensor
   
   if (value > 200) {
-    digitalWrite(LED, HIGH); // Turn the LED on
+    digitalWrite(WATER_PIN, HIGH); // Turn the LED on
   }
   else {
-    digitalWrite(LED, LOW); // Turn the LED off
+    digitalWrite(WATER_PIN, LOW); // Turn the LED off
   }
 }
