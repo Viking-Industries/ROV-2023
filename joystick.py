@@ -1,18 +1,34 @@
 import pygame
 from Arduino import Arduino
-from time import sleep
+import serial
+import display
 
 board = Arduino("115200", port="COM3")
+# receiver =serial.Serial('COM11', 9600)
 
-board.Servos.attach(13)
-board.Servos.attach(7)
+left = 9
+right = 7
 
-board.Servos.writeMicroseconds(13, 1100)
-board.Servos.writeMicroseconds(7, 1000)
+up1 = 13
+up2 = 5
 
+servo_pin = 3
+board.Servos.attach(servo_pin)
+
+board.Servos.attach(left)
+board.Servos.attach(right)
+board.Servos.attach(up1)
+board.Servos.attach(up2)
+
+board.Servos.writeMicroseconds(left, 1100)
+board.Servos.writeMicroseconds(right, 1000)
+
+board.Servos.writeMicroseconds(up1, 1100)
+board.Servos.writeMicroseconds(up2, 1100)
 
 rchange = 0
 lchange = 0
+upchange = 0
 
 # Initialize the Pygame joystick module
 pygame.init()
@@ -25,9 +41,6 @@ joystick.init()
 # Define the joystick deadzone (i.e. values below this threshold will be ignored)
 deadzone = 0.1
 
-# Define the maximum motor speed (0-255)
-max_speed = 255
-
 # Loop until the user quits
 done = False
 while not done:
@@ -39,57 +52,74 @@ while not done:
     # Get the current joystick axis positions
     x_axis = joystick.get_axis(0)
     y_axis = joystick.get_axis(1) * -1
+    twist = joystick.get_axis(2)
 
     # Apply the deadzone to the joystick values
     if abs(x_axis) < deadzone:
         x_axis = 0
     if abs(y_axis) < deadzone:
         y_axis = 0
-
- #   print(x_axis, y_axis)
+    if abs(twist) < deadzone:
+        twist = 0
 
     # Throttle Button
     if joystick.get_button(0) == 1:
         # Turn Left
-        if x_axis < 0:
-            lchange = y_axis * 100
+        if x_axis < 0 or twist < 0:
+            rchange = lchange - (abs(x_axis) * lchange)
         else:
-            lchange = y_axis * 200
+            rchange = y_axis * 1200
 
         # Turn Right
-        if x_axis > 0:
-            rchange = y_axis * 200
+        if x_axis > 0 or twist > 0:
+            lchange = rchange - (abs(x_axis) * rchange)
         else:
-            rchange = y_axis * 400
+            lchange = y_axis * 1200
     else:
         rchange = 0
         lchange = 0
-    
-    
+
+    if upchange < 1200:
+        if joystick.get_button(4) == 1:
+            upchange += 10
+        if joystick.get_button(2) == 1:
+            upchange -= 10
+    if joystick.get_button(1) == 1:
+        upchange = 0
     
     # Write PWM to ESC 
-    board.Servos.writeMicroseconds(7, 1000 + rchange)
-    board.Servos.writeMicroseconds(13, 1100 + lchange)
-  #  board.Servos.writeMicroseconds(11, 1100 + changey)
+    board.Servos.writeMicroseconds(right, 1000 + rchange)
+    board.Servos.writeMicroseconds(left, 1000 + lchange)
 
-    
-    
-    #print(joystick.get_axis(3))
-    # BUTTON 0 == back button 
-    # BUTTON 1 == thumb button
+    board.Servos.writeMicroseconds(up1, 1000 + upchange)
+    board.Servos.writeMicroseconds(up2, 1000 + upchange)
 
-    # BUTTON 2 == bottom left
-    # BUTTON 3 == bottom right
-    # BUTTON 4 == top left
-    # BUTTON 5 == top right
+    # Calculate servo angle from joystick
+    servo1 = abs((joystick.get_axis(3) - 1)* 180)/2
+    servo1 = round(servo1 / 10) * 10
 
-    # BUTTON 6 == 7
+    #Write Angle to Servo
+    board.Servos.write(servo_pin,servo1)
 
+# Display/Monitor
+    if board.analogRead(1) > 200:
+       #print("WARNING WATER IS REALLY INSIDE")
+        display.warning1 = False
+        display.warning2 = True
+    elif board.analogRead(1) > 100:
+       # print("WARNING WATER IS INSIDE")
+        display.warning2 = False
+        display.warning1 = True
+    else:
+        display.warning1 = False
+        display.warning2 = False
 
-    
+    display.lmotor = round(lchange)
+    display.rmotor = round(rchange)
+    display.umotor = round(upchange)
 
-
-
+    display.update_status()
+    display.app.update()
 
 # Clean up the Pygame and serial resources
 joystick.quit()
